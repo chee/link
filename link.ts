@@ -1,26 +1,52 @@
-let valid = (msg: string) => msg.length < 256
+import parse from "parse.js"
+
+interface Party {
+	friends: WebSocket[]
+	tempo: number
+	Q: number
+}
+
+function tell(friend: WebSocket, party: Party) {
+	friend.send(`tempo ${party.tempo} Q ${party.Q}`)
+}
 
 Deno.serve({port: 51234}, request => {
-	let friends: {[key: string]: WebSocket[]} = {}
+	let parties: {
+		[key: string]: Party
+	} = {}
 	if (request.headers.get("upgrade") != "websocket") {
 		return new Response(null, {status: 501})
 	}
 	let path = new URL(request.url).pathname
-	friends[path] ??= []
+	parties[path] ??= {friends: [], tempo: 0, Q: 0}
 	let {socket, response} = Deno.upgradeWebSocket(request)
 	socket.addEventListener("open", function (_event) {
-		let websocket = this
-		friends[path].push(websocket)
+		let person = this
+		let party = parties[path]
+		party.friends.push(person)
+		person.send(`tempo ${party.tempo} Q ${party.Q}`)
 	})
 	socket.addEventListener("close", function (_event) {
-		let websocket = this
-		friends[path] = friends[path].filter(friend => friend == websocket)
+		let person = this
+		let party = parties[path]
+		party.friends = parties[path].friends.filter(friend => person == friend)
 	})
 	socket.addEventListener("message", function (event) {
-		let websocket = this
-		if (valid(event.data))
-			friends[path].forEach(friend => {
-				if (friend != websocket) friend.send(event.data)
+		let person = this
+		let party = parties[path]
+		let message = parse(event.data)
+		let diff = false
+		if (message.tempo) {
+			party.tempo = message.tempo
+			diff = true
+		}
+		if (message.Q) {
+			party.Q = message.Q
+			diff = true
+		}
+		if (diff)
+			party.friends.forEach(friend => {
+				if (person != friend) tell(friend, party)
 			})
 	})
 	return response
