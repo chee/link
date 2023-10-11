@@ -9,7 +9,7 @@ let tempoForm = document.querySelector("form#tempo")
 let tempo = document.querySelector("form#tempo input")
 
 form.addEventListener("submit", event => {
-	let sock = new WebSocket(`wss://link.chee.party/${channel?.value}`)
+	let sock = new WebSocket(`wss://link.chee.party/${channel.value}`)
 	sock.addEventListener("message", event => {
 		try {
 			let opts = parse(event.data)

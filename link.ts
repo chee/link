@@ -11,17 +11,16 @@ function tell(friend: WebSocket, party: Party) {
 	friend.send(`tempo ${party.tempo} Q ${party.Q}`)
 }
 
+let parties: {
+	[key: string]: Party
+} = {}
+
 Deno.serve({port: 51234}, request => {
-	let parties: {
-		[key: string]: Party
-	} = {}
 	if (request.headers.get("upgrade") != "websocket") {
 		return new Response(null, {status: 501})
 	}
 	let path = new URL(request.url).pathname
-	console.info(parties[path])
 	parties[path] ??= {friends: [], tempo: 0, Q: 0}
-	console.info(parties[path])
 	let {socket, response} = Deno.upgradeWebSocket(request)
 	socket.addEventListener("open", function (_event) {
 		let person = this
