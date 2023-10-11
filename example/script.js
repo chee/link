@@ -1,4 +1,4 @@
-import parse from "parse.js"
+import parse from "/parse.js"
 /** @type {HTMLFormElement} */
 let form = document.querySelector("form#channel")
 /** @type {HTMLInputElement} */
@@ -20,6 +20,8 @@ form.addEventListener("submit", event => {
 	})
 	tempoForm.onsubmit = function (event) {
 		event.preventDefault()
-		sock.send(`tempo ${tempo.value}`)
+		let message = `tempo ${tempo.value}`
+		console.info(message)
+		sock.send(message)
 	}
 })
