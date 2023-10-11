@@ -1,4 +1,4 @@
-import parse from "/parse.js"
+import parse from "./parse.js"
 /** @type {HTMLFormElement} */
 let form = document.querySelector("form#channel")
 /** @type {HTMLInputElement} */
