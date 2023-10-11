@@ -1,4 +1,4 @@
-import parse from "parse.js"
+import parse from "./parse.js"
 
 interface Party {
 	friends: WebSocket[]
