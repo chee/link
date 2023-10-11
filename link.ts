@@ -23,33 +23,42 @@ Deno.serve({port: 51234}, request => {
 	parties[path] ??= {friends: [], tempo: 0, Q: 0}
 	let {socket, response} = Deno.upgradeWebSocket(request)
 	socket.addEventListener("open", function (_event) {
-		let person = this
-		let party = parties[path]
-		party.friends.push(person)
-		tell(person, party)
+		try {
+			let person = this
+			let party = parties[path]
+			party.friends.push(person)
+			tell(person, party)
+		} catch {}
 	})
 	socket.addEventListener("close", function (_event) {
-		let person = this
-		let party = parties[path]
-		party.friends = parties[path].friends.filter(friend => person == friend)
+		try {
+			let person = this
+			let party = parties[path]
+			party.friends = parties[path].friends.filter(
+				friend => person == friend
+			)
+		} catch {}
 	})
 	socket.addEventListener("message", function (event) {
-		let person = this
-		let party = parties[path]
-		let message = parse(event.data)
-		let diff = false
-		if (message.tempo) {
-			party.tempo = message.tempo
-			diff = true
-		}
-		if (message.Q) {
-			party.Q = message.Q
-			diff = true
-		}
-		if (diff)
-			party.friends.forEach(friend => {
-				if (person != friend) tell(friend, party)
-			})
+		try {
+			let person = this
+			let party = parties[path]
+			let message = parse(event.data)
+			let diff = false
+			if (message.tempo) {
+				party.tempo = message.tempo
+				diff = true
+			}
+			if (message.Q) {
+				party.Q = message.Q
+				diff = true
+			}
+			if (diff)
+				party.friends.forEach(friend => {
+					if (friend != person && friend.readyState == friend.OPEN)
+						tell(friend, party)
+				})
+		} catch {}
 	})
 	return response
 })
