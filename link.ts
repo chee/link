@@ -5,15 +5,46 @@ interface Party {
 	tempo: number
 	Q: number
 }
+type Parties = {[key: string]: Party}
 
+async function loadParties(): Promise<Parties> {
+	try {
+		return JSON.parse(await Deno.readTextFile("./parties.json"))
+	} catch {
+		return {}
+	}
+}
 function tell(friend: WebSocket, party: Party) {
 	console.log(`tempo ${party.tempo} Q ${party.Q}`)
 	friend.send(`tempo ${party.tempo} Q ${party.Q}`)
 }
 
-let parties: {
-	[key: string]: Party
-} = {}
+let parties: Parties = await loadParties()
+
+function removeFriendsFromParty(party: Party): Party {
+	return {...party, friends: []}
+}
+
+function removeAllFriendsFromAllParties(parties: Parties) {
+	let emptyParties: Parties = {}
+	for (let name in parties) {
+		emptyParties[name] = removeFriendsFromParty(parties[name])
+	}
+	return emptyParties
+}
+
+// TODO don't use json for this, use tsv
+async function saveParties(parties: Parties) {
+	try {
+		return Deno.writeTextFile("./parties.json", JSON.stringify(parties))
+	} catch {}
+}
+
+let saveKnownParties = () =>
+	saveParties(removeAllFriendsFromAllParties(parties))
+
+setInterval(saveKnownParties, 30000)
+saveKnownParties()
 
 Deno.serve({port: 51234}, request => {
 	if (request.headers.get("upgrade") != "websocket") {
