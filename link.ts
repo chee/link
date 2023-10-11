@@ -1,21 +1,27 @@
+let valid = (msg: string) => msg.length < 256
+
 Deno.serve({port: 51234}, request => {
-	let sessions: {[key: string]: WebSocket[]} = {}
+	let friends: {[key: string]: WebSocket[]} = {}
 	if (request.headers.get("upgrade") != "websocket") {
 		return new Response(null, {status: 501})
 	}
 	let path = new URL(request.url).pathname
-	const {socket, response} = Deno.upgradeWebSocket(request)
-	socket.addEventListener("open", function (event) {
-		console.log({this: this, event})
-		console.log("a client connected!")
+	friends[path] ??= []
+	let {socket, response} = Deno.upgradeWebSocket(request)
+	socket.addEventListener("open", function (_event) {
+		let websocket = this
+		friends[path].push(websocket)
 	})
-	socket.addEventListener("close", function (event) {
-		sessions[path] = sessions[path]
+	socket.addEventListener("close", function (_event) {
+		let websocket = this
+		friends[path] = friends[path].filter(friend => friend == websocket)
 	})
 	socket.addEventListener("message", function (event) {
-		if (event.data === "ping") {
-			socket.send("pong")
-		}
+		let websocket = this
+		if (valid(event.data))
+			friends[path].forEach(friend => {
+				if (friend != websocket) friend.send(event.data)
+			})
 	})
 	return response
 })
